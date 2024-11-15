@@ -1,7 +1,6 @@
 // index.js
 const express = require("express");
 const { getMagnetLinks } = require("./src/scraper.js");
-require('web-streams-polyfill/es6');
 const app = express();
 const PORT = 3000;
 
@@ -9,8 +8,9 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Movie Magnet Link Scraper!");
 });
 
-app.get("/search", async (req, res) => {
-  const { movieName } = req.query;
+app.get("/search/:name", async (req, res) => {
+  
+  const  movieName  = req.params.name;
   if (!movieName) return res.status(400).send("Please provide a movie name.");
 
   try {

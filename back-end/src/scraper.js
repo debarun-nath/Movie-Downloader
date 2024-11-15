@@ -1,32 +1,34 @@
-// scraper.js
 const axios = require("axios");
 const cheerio = require("cheerio");
 
 async function getMagnetLinks(movieName) {
-  const searchURL = `https://1337x.to/search/${movieName.replace(
-    / /g,
-    "+"
-  )}/1/`;
+  const searchURL = `https://1337x.to/search/${movieName.replace(/ /g, "+")}/1/`;
 
   try {
     // Fetch the search results page
     const { data } = await axios.get(searchURL);
     const $ = cheerio.load(data);
 
-    // Find the top 10 result links
+    // Find the top 10 result links and movie names
     const resultLinks = [];
     $('a[href*="/torrent/"]').each((index, element) => {
       if (index < 10) {
-        const link = $(element).attr("href");
+        const link = $(element).attr("href"); // Get the relative link to the torrent details page
+        const movieName = $(element).text().trim(); // Get the movie name (text content of the link)
+        
         const detailsURL = `https://1337x.to${link}`;
 
-        // Fetch the torrent details page to get the magnet link
-        resultLinks.push(getMagnetLink(detailsURL));
+        // Push an object with movie name and torrent details URL to resultLinks array
+        resultLinks.push({ name: movieName, detailsURL });
       }
     });
 
-    // Wait for all magnet links to be fetched
-    const magnetLinks = await Promise.all(resultLinks);
+    // Fetch magnet links for each result
+    const magnetLinks = await Promise.all(resultLinks.map(async (movie) => {
+      const magnetLink = await getMagnetLink(movie.detailsURL);
+      return { name: movie.name, magnetLink };
+    }));
+
     return magnetLinks;
   } catch (error) {
     console.error(error);
